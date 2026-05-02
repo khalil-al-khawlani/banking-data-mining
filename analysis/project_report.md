@@ -201,7 +201,7 @@ table(km$cluster, df$LoanStatus)
 library(tidytext)
 reviews <- df %>% select(CustomerID, LoanStatus, Review)
  tidy_rev <- reviews %>% tidytext::unnest_tokens(word, Review)
-sentiment <- tidy_rev %>% inner_join(get_sentiments('bing')) %>%
+sentiment <- tidy_rev %>% inner_join(tidytext::get_sentiments('bing')) %>%
   count(CustomerID, sentiment) %>% pivot_wider(names_from=sentiment, values_from=n, values_fill=0)
 
 # دمج مع الداتا وقياس التأثير

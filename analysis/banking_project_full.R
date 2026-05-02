@@ -326,7 +326,7 @@ if('Review' %in% names(df)){
   reviews <- df %>% select(CustomerID, LoanStatus, Review) %>% distinct(CustomerID, .keep_all = TRUE)
   tidy_rev <- reviews %>% tidytext::unnest_tokens(word, Review)
 
-  bing <- get_sentiments('bing')
+  bing <- tidytext::get_sentiments('bing')
   sentiment_counts <- tidy_rev %>% inner_join(bing, by='word') %>% count(CustomerID, sentiment) %>% pivot_wider(names_from = sentiment, values_from = n, values_fill = 0)
 
   # Merge back
@@ -341,8 +341,7 @@ if('Review' %in% names(df)){
   }
 
   # Wordcloud of most common words (excluding stop words)
-  data(stop_words)
-  words <- tidy_rev %>% anti_join(stop_words, by='word') %>% count(word, sort=TRUE)
+  words <- tidy_rev %>% anti_join(tidytext::stop_words, by='word') %>% count(word, sort=TRUE)
   if(nrow(words) == 0){
     words <- tibble(word = 'no_words', n = 1)
   }
