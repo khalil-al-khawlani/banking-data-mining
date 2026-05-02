@@ -149,21 +149,28 @@ postResample(preds, test$Score)
 ## 7. Classification (الخطوة الأساسية)
 
 - Target: `LoanStatus`
-- Model plan: Baseline (logistic), Random Forest، تقييم بواسطة cross-validation، تقرير دقة ودلالات.
+- Model plan: Baseline (Decision Tree), Random Forest، تقييم بواسطة confusion matrix، تقرير الدقة ودلالات.
 
 ### 7.1 نموذج تصنيف (R)
 
 ```r
+library(rpart)
+library(rpart.plot)
 library(randomForest)
 set.seed(42)
 train_idx <- createDataPartition(df$LoanStatus, p=0.8, list=FALSE)
 train <- df[train_idx,]
 test <- df[-train_idx,]
 
-# اختيار ميزات رقمية فقط لمثال سريع
+# Decision Tree
+tree_mod <- rpart(LoanStatus ~ Income + Expenditure + Score + Age + Category, data=train, method='class')
+pred_tree <- predict(tree_mod, test, type='class')
+caret::confusionMatrix(pred_tree, test$LoanStatus)
+
+# Random Forest for comparison
 rf_mod <- randomForest(LoanStatus ~ Income + Expenditure + Score + Age + Category, data=train, ntree=200)
-pred <- predict(rf_mod, test)
-caret::confusionMatrix(pred, test$LoanStatus)
+pred_rf <- predict(rf_mod, test)
+caret::confusionMatrix(pred_rf, test$LoanStatus)
 
 # Feature importance
 importance(rf_mod)
@@ -193,7 +200,7 @@ table(km$cluster, df$LoanStatus)
 ```r
 library(tidytext)
 reviews <- df %>% select(CustomerID, LoanStatus, Review)
-tidy_rev <- reviews %>% unnest_tokens(word, Review)
+ tidy_rev <- reviews %>% tidytext::unnest_tokens(word, Review)
 sentiment <- tidy_rev %>% inner_join(get_sentiments('bing')) %>%
   count(CustomerID, sentiment) %>% pivot_wider(names_from=sentiment, values_from=n, values_fill=0)
 

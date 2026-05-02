@@ -261,15 +261,17 @@ if('LoanStatus' %in% names(df)){
   train_cl <- class_df[tr_idx,]
   test_cl <- class_df[-tr_idx,]
 
-  # Logistic Regression (baseline) - using glm
-  glm_mod <- glm(LoanStatus ~ . , data = train_cl, family = binomial)
-  probs_glm <- predict(glm_mod, test_cl, type = 'response')
-  # Need to decide threshold; default 0.5
-  pred_glm <- ifelse(probs_glm > 0.5, levels(train_cl$LoanStatus)[2], levels(train_cl$LoanStatus)[1])
-  pred_glm <- factor(pred_glm, levels = levels(train_cl$LoanStatus))
-  cm_glm <- caret::confusionMatrix(pred_glm, test_cl$LoanStatus)
-  print(cm_glm)
-  capture.output(cm_glm, file = 'analysis/outputs/glm_confusion.txt')
+  # Decision Tree (baseline classification model)
+  tree_mod <- rpart(LoanStatus ~ . , data = train_cl, method = 'class')
+  pred_tree <- predict(tree_mod, test_cl, type = 'class')
+  cm_tree <- caret::confusionMatrix(pred_tree, test_cl$LoanStatus)
+  print(cm_tree)
+  capture.output(cm_tree, file = 'analysis/outputs/tree_confusion.txt')
+
+  # Plot tree
+  png('analysis/plots/decision_tree.png', width = 900, height = 700)
+  rpart.plot(tree_mod, main = 'Decision Tree for LoanStatus')
+  dev.off()
 
   # Random Forest
   rf_mod <- randomForest(LoanStatus ~ ., data = train_cl, ntree = 200)
@@ -308,7 +310,8 @@ if(length(num_vars) >= 2){
 
   # Table clusters vs LoanStatus if available
   if('LoanStatus' %in% names(df)){
-    cluster_table <- table(km$cluster, df %>% drop_na()%>% pull(LoanStatus))
+    cluster_lookup <- df %>% select(LoanStatus) %>% drop_na()
+    cluster_table <- table(km$cluster, cluster_lookup$LoanStatus)
     write.csv(as.data.frame(cluster_table), 'analysis/outputs/cluster_loanstatus_table.csv')
     print(cluster_table)
   }
@@ -321,12 +324,7 @@ if('Review' %in% names(df)){
   cat('\n--- Text Analysis / Sentiment ---\n')
 
   reviews <- df %>% select(CustomerID, LoanStatus, Review) %>% distinct(CustomerID, .keep_all = TRUE)
-  tidy_rev <- reviews %>% unnest_tokens(word, Review)
-
-  # Use bing lexicon
-  if(!('bing' %in% get_sentiments('bing')$lexicon %||% character(0))){
-    # fallback: tidytext has built-in bing
-  }
+  tidy_rev <- reviews %>% tidytext::unnest_tokens(word, Review)
 
   bing <- get_sentiments('bing')
   sentiment_counts <- tidy_rev %>% inner_join(bing, by='word') %>% count(CustomerID, sentiment) %>% pivot_wider(names_from = sentiment, values_from = n, values_fill = 0)
@@ -345,6 +343,9 @@ if('Review' %in% names(df)){
   # Wordcloud of most common words (excluding stop words)
   data(stop_words)
   words <- tidy_rev %>% anti_join(stop_words, by='word') %>% count(word, sort=TRUE)
+  if(nrow(words) == 0){
+    words <- tibble(word = 'no_words', n = 1)
+  }
   png('analysis/plots/review_wordcloud.png', width=800, height=600)
   wordcloud(words = words$word, freq = words$n, max.words = 100, colors = RColorBrewer::brewer.pal(8, 'Dark2'))
   dev.off()
