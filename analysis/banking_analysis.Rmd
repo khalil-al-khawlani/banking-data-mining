@@ -1,0 +1,56 @@
+---
+title: "Banking Dataset — Data Mining Analysis (Group 1)"
+author: "Group 1"
+date: "`r format(Sys.Date(), '%Y-%m-%d')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(lubridate)
+```
+
+# Problem Definition
+
+- Dataset: banking_realistic.csv (Group 1)
+- Problem: Predict `LoanStatus` (Approved / Rejected) and analyze factors affecting loan decisions.
+- Objective: Build a classification model for `LoanStatus`, provide feature importance, and perform exploratory analysis on Income, Expenditure, Score, Age, Category, and Review.
+
+# Data Understanding
+
+```{r read-data}
+df <- read_csv(file.path('Project_datasets','banking_realistic.csv'))
+glimpse(df)
+cat('Rows:', nrow(df), 'Cols:', ncol(df), '\n')
+head(df)
+```
+
+## Basic summary and missing values
+
+```{r summary}
+summary(df)
+sapply(df, function(x) sum(is.na(x)))
+```
+
+## Convert types
+
+```{r types}
+df <- df %>%
+  mutate(Date = ymd(Date),
+         LoanStatus = as.factor(LoanStatus),
+         Category = as.factor(Category),
+         Review = as.factor(Review))
+
+glimpse(df)
+```
+
+## First plots (distributions)
+
+```{r plots}
+ggplot(df, aes(x = Income)) + geom_histogram(bins=30) + theme_minimal()
+ggplot(df, aes(x = Expenditure)) + geom_histogram(bins=30) + theme_minimal()
+ggplot(df, aes(x = Score)) + geom_histogram(bins=20) + theme_minimal()
+```
+
+<!-- Next steps: Data cleaning, feature engineering, modeling (classification), clustering, text analysis on `Review`. -->
