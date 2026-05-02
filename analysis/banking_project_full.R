@@ -1,6 +1,9 @@
 # Project Title: Banking Dataset Analysis
 # Group Number: 1
-# Student Names: (أضف أسماء الأعضاء هنا)
+# Student Names:
+# 1. Ghadah Ali bin Al-Shehri (Student ID: 444821091)
+# 2. Jana Khalid Al-Qahtani (Student ID: 445803988)
+# 3. Waad Abdulaziz Al-Buraik (Student ID: 443813233)
 
 #### Full Data Mining Workflow (CRISP-DM) using R
 #### This script is POSIT Cloud compatible. Place it at repository root and run in RStudio / Posit.
@@ -289,6 +292,33 @@ if('LoanStatus' %in% names(df)){
   # Plot variable importance
   p_imp <- ggplot(imp_df, aes(x=reorder(Feature, Importance), y=Importance)) + geom_col(fill='#2b8cbe') + coord_flip() + theme_minimal() + ggtitle('Random Forest Feature Importance')
   ggsave('analysis/plots/rf_feature_importance.png', p_imp, width=7, height=4)
+
+  ## Cross-validated Random Forest (5-fold CV) - save metrics and ROC
+  if(requireNamespace('pROC', quietly = TRUE) == FALSE) install.packages('pROC', repos='https://cloud.r-project.org')
+  library(pROC)
+
+  trctrl <- trainControl(method = 'cv', number = 5, classProbs = TRUE, summaryFunction = twoClassSummary, savePredictions = 'final')
+  # ensure factor levels consistent: Rejected, Approved
+  train_cl$LoanStatus <- factor(train_cl$LoanStatus, levels = c('Rejected','Approved'))
+  set.seed(42)
+  rf_cv <- train(LoanStatus ~ ., data = train_cl, method = 'rf', metric = 'ROC', trControl = trctrl)
+
+  # save CV results
+  cv_results <- rf_cv$results
+  write_csv(cv_results, 'analysis/outputs/rf_cv_results.csv')
+
+  # compute AUC on resampled predictions
+  pred_df <- rf_cv$pred
+  # predict probability for Approved
+  roc_obj <- pROC::roc(response = ifelse(pred_df$obs == 'Approved', 1, 0), predictor = pred_df$Approved)
+  auc_val <- pROC::auc(roc_obj)
+  cat('RF CV AUC:', as.numeric(auc_val), '\n')
+  write.csv(data.frame(AUC = as.numeric(auc_val)), 'analysis/outputs/rf_cv_auc.csv', row.names = FALSE)
+
+  # plot ROC
+  png('analysis/plots/rf_cv_roc.png', width = 800, height = 600)
+  plot(roc_obj, main = paste('Random Forest CV ROC (AUC =', round(as.numeric(auc_val),3),')'))
+  dev.off()
 }
 
 ## ---------------------------

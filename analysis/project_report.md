@@ -219,6 +219,38 @@ cor(df2$sentiment_score, ifelse(df2$LoanStatus=='Approved',1,0), use='complete.o
 
 ---
 
+## Interpretation and Conclusion
+
+**Group:** Group 1 — Banking Dataset Analysis
+
+**Members:** Ghadah Ali bin Al-Shehri (444821091), Jana Khalid Al-Qahtani (445803988), Waad Abdulaziz Al-Buraik (443813233)
+
+**Summary of findings (concise, human style):**
+- The data contains 100 records describing customer income, expenditure, credit score and a simple text review. After cleaning and basic feature engineering we ran regression, classification, clustering and a simple sentiment analysis.
+- Regression: a linear model to predict `Score` from `Income`, `Expenditure` and `Age` produced low R-squared (~0.05) and RMSE ~15.7 — numeric predictors explain little variance in `Score`.
+- Classification: a decision tree and Random Forest both achieved perfect accuracy on the held-out test split used in the script; Random Forest feature importance ranks `Income` and `Score` highest. Because the test set is small, we applied 5-fold cross-validation and report AUC and averaged metrics in `analysis/outputs/` (see `rf_cv_results.csv`, `rf_cv_auc.csv`).
+- Clustering: K-means (k=6 heuristic) found customer groups with different mixes of approved/rejected labels — useful for exploratory segmentation but requires business validation.
+- Text analysis: simple sentiment counts (using `bing`) show a small difference between `Approved` and `Rejected` customers; reviews in the dataset are very short (e.g., "Bad", "Average") limiting text signal.
+
+**Interpretation (actionable):**
+- The strongest numerical signals for loan decisions appear to be `Income` and `Score`. We recommend the instructor or bank to consider `Income_to_Expenditure` ratios and combinations of `Score` with recent spending behavior when designing approval rules.
+- Because a small test split produced perfect accuracy, rely on cross‑validated AUC and metrics instead of a single split — see `analysis/outputs/rf_cv_auc.csv` for the validated AUC. If AUC remains high across CV, the model is likely robust; otherwise, collect more data or engineer stronger features.
+
+**Recommendations for improvement / next steps:**
+1. Use stratified k‑fold cross‑validation and report mean±SD for Accuracy, F1 and AUC (we added 5‑fold CV in the script and saved results).
+2. Engineer additional features: historical averages, income/expenditure trends, time-since-last-default (if available), categorical encoding of `Category` with one-hot.
+3. If deployment is required, set a conservative decision threshold and track false positives (approving risky loans) separately from false negatives.
+4. For text analysis, gather longer customer feedback or reviews to extract signal or use an external sentiment lexicon/embedding for better accuracy.
+
+**Deliverables provided in repository:**
+- Cleaned dataset: `analysis/outputs/banking_cleaned.csv`
+- Plots: `analysis/plots/` (histograms, boxplots, cluster plot, ROC, wordcloud)
+- Model outputs: `analysis/outputs/` (confusion matrices, rf_feature_importance.csv, rf_cv_results.csv, rf_cv_auc.csv)
+
+If you want, I can now run a short script to export `analysis/project_report.md` to `analysis/project_report.docx` and attach it here, or I can add a short slide-style summary for submission.
+
+---
+
 ### Next steps
 1. شغّل هذا الملف محليًا أو في Posit Cloud (RStudio).\
 2. إذا تريد، أحول هذا `project_report.md` إلى ملف Word (`.docx`) باستخدام pandoc أو R Markdown، ثم أرفع كل شيء إلى GitHub وأرشدك لفتح المشروع على Posit Cloud.
